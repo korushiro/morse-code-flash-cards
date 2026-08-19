@@ -16,16 +16,47 @@
     align-items: center;
     justify-content: center;
     transition: background 0.3s, color 0.3s;
+    overflow: hidden;
   }
 
-  .app {
+  /* ── Page flip container ── */
+  .page-wrap {
+    perspective: 1400px;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-inner {
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(.4,0,.2,1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-inner.flipped { transform: rotateY(180deg); }
+
+  .page-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    justify-content: center;
     padding: 2rem 1rem;
+    gap: 20px;
   }
 
+  .page-back { transform: rotateY(180deg); }
+
+  /* ── Flashcard view ── */
   h1 { font-size: 18px; font-weight: 500; color: var(--text); letter-spacing: 0.02em; }
   .progress { font-size: 13px; color: var(--subtle); }
 
@@ -63,8 +94,8 @@
   .front { background: var(--card-front); }
   .back  { background: var(--card-back); transform: rotateY(180deg); }
 
-  .letter { font-size: 64px; font-weight: 500; color: var(--text); line-height: 1; }
-  .hint   { font-size: 13px; color: var(--subtle); }
+  .letter   { font-size: 64px; font-weight: 500; color: var(--text); line-height: 1; }
+  .hint     { font-size: 13px; color: var(--subtle); }
   .mnemonic { font-size: 22px; font-weight: 500; color: var(--text); }
 
   .morse-row {
@@ -77,8 +108,7 @@
 
   .dot {
     display: inline-block;
-    width: 10px;
-    height: 10px;
+    width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--text);
     flex-shrink: 0;
@@ -86,13 +116,38 @@
 
   .dash {
     display: inline-block;
-    width: 26px;
-    height: 10px;
+    width: 26px; height: 10px;
     border-radius: 5px;
     background: var(--text);
     flex-shrink: 0;
   }
 
+  /* smaller dot/dash for cheat sheet */
+  .dot-sm {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text);
+    flex-shrink: 0;
+  }
+
+  .dash-sm {
+    display: inline-block;
+    width: 16px; height: 6px;
+    border-radius: 3px;
+    background: var(--text);
+    flex-shrink: 0;
+  }
+
+  .morse-row-sm {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-height: 6px;
+    flex-wrap: nowrap;
+  }
+
+  /* ── Controls ── */
   .controls { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .btn-row  { display: flex; gap: 10px; justify-content: center; }
 
@@ -112,6 +167,7 @@
   button:active { transform: scale(0.98); }
   button.muted  { color: var(--subtle); }
 
+  /* ── Pip row ── */
   .dots-row {
     display: flex;
     gap: 4px;
@@ -123,8 +179,7 @@
   }
 
   .pip {
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--border);
     flex-shrink: 0;
@@ -134,44 +189,133 @@
 
   .pip:hover  { transform: scale(1.5); }
   .pip.active { background: var(--text); }
+
+  /* ── Cheat sheet ── */
+  .cheat-header {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .cheat-table {
+    width: 100%;
+    max-width: 360px;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .cheat-table thead th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--subtle);
+    padding: 0 8px 8px;
+    text-align: left;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .cheat-table tbody tr {
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .cheat-table tbody tr:last-child { border-bottom: none; }
+
+  .cheat-table td {
+    padding: 5px 8px;
+    vertical-align: middle;
+    color: var(--text);
+  }
+
+  .cheat-table td:first-child {
+    font-size: 16px;
+    font-weight: 600;
+    width: 32px;
+  }
+
+  .cheat-table td:nth-child(2) {
+    color: var(--subtle);
+    font-size: 12px;
+    width: 120px;
+  }
+
+  .section-divider td {
+    padding-top: 10px;
+    padding-bottom: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--subtle);
+    border-bottom: 0.5px solid var(--border);
+  }
 </style>
 </head>
 <body>
-<div class="app">
-  <h1>Morse code flashcards</h1>
-  <div class="progress" id="progress">Card 1 of 36</div>
+<div class="page-wrap">
+  <div class="page-inner" id="page-inner">
 
-  <div class="card-wrap" onclick="flipCard()">
-    <div class="card" id="card">
-      <div class="face front">
-        <div class="letter" id="letter">A</div>
-        <div class="hint">tap to reveal</div>
+    <!-- FRONT: Flashcard view -->
+    <div class="page-face page-front">
+      <h1>Morse code flashcards</h1>
+      <div class="progress" id="progress">Card 1 of 36</div>
+
+      <div class="card-wrap" onclick="flipCard()">
+        <div class="card" id="card">
+          <div class="face front">
+            <div class="letter" id="letter">A</div>
+            <div class="hint">tap to reveal</div>
+          </div>
+          <div class="face back">
+            <div class="mnemonic" id="mnemonic">at</div>
+            <div class="morse-row" id="morse-display"></div>
+          </div>
+        </div>
       </div>
-      <div class="face back">
-        <div class="mnemonic" id="mnemonic">at</div>
-        <div class="morse-row" id="morse-display"></div>
+
+      <div class="dots-row" id="dots-row"></div>
+
+      <div class="controls">
+        <div class="btn-row">
+          <button onclick="prevCard()">&#8592; prev</button>
+          <button onclick="nextCard()">next &#8594;</button>
+        </div>
+        <div class="btn-row">
+          <button id="speed-btn" onclick="toggleSpeed()">speed: fast</button>
+          <button id="sound-btn" onclick="toggleSound()">sound: on</button>
+        </div>
+        <div class="btn-row">
+          <button onclick="shuffle()">shuffle</button>
+          <button onclick="reset()">reset</button>
+        </div>
+        <div class="btn-row">
+          <button id="dark-btn" onclick="toggleDark()">dark mode: off</button>
+        </div>
+        <div class="btn-row">
+          <button onclick="toggleCheatSheet()">show cheat sheet</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="dots-row" id="dots-row"></div>
+    <!-- BACK: Cheat sheet view -->
+    <div class="page-face page-back">
+      <div class="cheat-header">Cheat sheet</div>
 
-  <div class="controls">
-    <div class="btn-row">
-      <button onclick="prevCard()">&#8592; prev</button>
-      <button onclick="nextCard()">next &#8594;</button>
+      <div style="width:100%;max-width:360px;overflow-y:auto;max-height:70vh;">
+        <table class="cheat-table" id="cheat-table"></table>
+      </div>
+
+      <div class="controls">
+        <div class="btn-row">
+          <button id="dark-btn-cs" onclick="toggleDark()">dark mode: off</button>
+        </div>
+        <div class="btn-row">
+          <button onclick="toggleCheatSheet()">hide cheat sheet</button>
+        </div>
+      </div>
     </div>
-    <div class="btn-row">
-      <button id="speed-btn" onclick="toggleSpeed()">speed: fast</button>
-      <button id="sound-btn" onclick="toggleSound()">sound: on</button>
-    </div>
-    <div class="btn-row">
-      <button onclick="shuffle()">shuffle</button>
-      <button onclick="reset()">reset</button>
-    </div>
-    <div class="btn-row">
-      <button id="dark-btn" onclick="toggleDark()">dark mode: off</button>
-    </div>
+
   </div>
 </div>
 
@@ -203,7 +347,8 @@ const COLORS = {
 };
 /* ============================================================ */
 
-let darkMode = false;
+let darkMode    = false;
+let cheatOpen   = false;
 
 function applyColors(mode) {
   const c = COLORS[mode];
@@ -220,10 +365,11 @@ function applyColors(mode) {
 function toggleDark() {
   darkMode = !darkMode;
   applyColors(darkMode ? 'dark' : 'light');
-  document.getElementById('dark-btn').textContent = `dark mode: ${darkMode ? 'on' : 'off'}`;
+  const label = `dark mode: ${darkMode ? 'on' : 'off'}`;
+  document.getElementById('dark-btn').textContent    = label;
+  document.getElementById('dark-btn-cs').textContent = label;
 }
 
-// Apply light mode on load
 applyColors('light');
 
 /* ============================================================
@@ -256,16 +402,16 @@ const data = [
   { letter:'X', mnemonic:'foxy',        morse:'-..-'  },
   { letter:'Y', mnemonic:'yell / yolk', morse:'-.--'  },
   { letter:'Z', mnemonic:'Zhou',        morse:'--..'  },
-  { letter:'0', mnemonic:'0',           morse:'-----' },
-  { letter:'1', mnemonic:'1',           morse:'.----' },
-  { letter:'2', mnemonic:'2',           morse:'..---' },
-  { letter:'3', mnemonic:'3',           morse:'...--' },
-  { letter:'4', mnemonic:'4',           morse:'....-' },
-  { letter:'5', mnemonic:'5',           morse:'.....' },
-  { letter:'6', mnemonic:'6',           morse:'-....' },
-  { letter:'7', mnemonic:'7',           morse:'--...' },
-  { letter:'8', mnemonic:'8',           morse:'---..' },
-  { letter:'9', mnemonic:'9',           morse:'----.' },
+  { letter:'0', mnemonic:'',            morse:'-----' },
+  { letter:'1', mnemonic:'',            morse:'.----' },
+  { letter:'2', mnemonic:'',            morse:'..---' },
+  { letter:'3', mnemonic:'',            morse:'...--' },
+  { letter:'4', mnemonic:'',            morse:'....-' },
+  { letter:'5', mnemonic:'',            morse:'.....' },
+  { letter:'6', mnemonic:'',            morse:'-....' },
+  { letter:'7', mnemonic:'',            morse:'--...' },
+  { letter:'8', mnemonic:'',            morse:'---..' },
+  { letter:'9', mnemonic:'',            morse:'----.' },
 ];
 
 /* ============================================================
@@ -283,10 +429,69 @@ let flipped = false;
 let soundOn = true;
 let speed   = 'fast';
 
-const FLIP_DURATION = 450;
+const FLIP_DURATION     = 450;
+const PAGE_FLIP_DURATION = 700;
 
 /* ============================================================
-   FUNCTIONS
+   CHEAT SHEET
+   ============================================================ */
+function renderMorseSm(str) {
+  return str.split('').map(c => {
+    if (c === '.') return '<span class="dot-sm"></span>';
+    if (c === '-') return '<span class="dash-sm"></span>';
+    return '';
+  }).join('');
+}
+
+function buildCheatSheet() {
+  const letters = data.filter(d => isNaN(d.letter));
+  const numbers = data.filter(d => !isNaN(d.letter));
+
+  let html = `
+    <thead>
+      <tr>
+        <th></th>
+        <th>Mnemonic</th>
+        <th>Morse</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="section-divider"><td colspan="3">Letters</td></tr>
+  `;
+
+  letters.forEach(d => {
+    html += `
+      <tr>
+        <td>${d.letter}</td>
+        <td>${d.mnemonic}</td>
+        <td><div class="morse-row-sm">${renderMorseSm(d.morse)}</div></td>
+      </tr>
+    `;
+  });
+
+  html += `<tr class="section-divider"><td colspan="3">Numbers</td></tr>`;
+
+  numbers.forEach(d => {
+    html += `
+      <tr>
+        <td>${d.letter}</td>
+        <td></td>
+        <td><div class="morse-row-sm">${renderMorseSm(d.morse)}</div></td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody>';
+  document.getElementById('cheat-table').innerHTML = html;
+}
+
+function toggleCheatSheet() {
+  cheatOpen = !cheatOpen;
+  document.getElementById('page-inner').classList.toggle('flipped', cheatOpen);
+}
+
+/* ============================================================
+   FLASHCARD FUNCTIONS
    ============================================================ */
 function playMorse(morseStr) {
   if (!soundOn) return;
@@ -294,7 +499,7 @@ function playMorse(morseStr) {
   const { dot, dash, gap } = SPEEDS[speed];
   let t = ctx.currentTime + 0.05;
   for (const ch of morseStr) {
-    const dur = ch === '.' ? dot : dash;
+    const dur  = ch === '.' ? dot : dash;
     const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -321,10 +526,10 @@ function renderMorse(str) {
 
 function setCardContent() {
   const d = deck[idx];
-  document.getElementById('letter').textContent        = d.letter;
-  document.getElementById('mnemonic').textContent      = d.mnemonic;
-  document.getElementById('morse-display').innerHTML   = renderMorse(d.morse);
-  document.getElementById('progress').textContent      = `Card ${idx+1} of ${deck.length}`;
+  document.getElementById('letter').textContent      = d.letter;
+  document.getElementById('mnemonic').textContent    = d.mnemonic;
+  document.getElementById('morse-display').innerHTML = renderMorse(d.morse);
+  document.getElementById('progress').textContent    = `Card ${idx+1} of ${deck.length}`;
   renderDots();
 }
 
@@ -383,6 +588,7 @@ function toggleSound() {
   btn.classList.toggle('muted', !soundOn);
 }
 
+buildCheatSheet();
 updateCard();
 </script>
 </body>
