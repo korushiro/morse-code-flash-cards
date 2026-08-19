@@ -34,6 +34,7 @@
     min-height: 100vh;
     position: relative;
     transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
     transition: transform 0.7s cubic-bezier(.4,0,.2,1);
     display: flex;
     align-items: center;
@@ -46,12 +47,14 @@
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
     gap: 20px;
+    background: var(--bg);
   }
 
   .page-back { transform: rotateY(180deg); }
@@ -493,17 +496,31 @@ function toggleCheatSheet() {
 /* ============================================================
    FLASHCARD FUNCTIONS
    ============================================================ */
+/* ============================================================
+   AUDIO
+   ============================================================ */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// Resume context on any tap — satisfies mobile autoplay policy
+document.addEventListener('touchstart', () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: false });
+
+document.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: false });
+
 function playMorse(morseStr) {
   if (!soundOn) return;
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   const { dot, dash, gap } = SPEEDS[speed];
-  let t = ctx.currentTime + 0.05;
+  let t = audioCtx.currentTime + 0.05;
   for (const ch of morseStr) {
     const dur  = ch === '.' ? dot : dash;
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(audioCtx.destination);
     osc.frequency.value = FREQ;
     osc.type = 'sine';
     gain.gain.setValueAtTime(0, t);
