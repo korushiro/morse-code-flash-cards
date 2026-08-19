@@ -114,24 +114,25 @@
 
   .dots-row {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-wrap: nowrap;
-    overflow-x: auto;
+    width: 100%;
     max-width: 340px;
+    justify-content: center;
     padding-bottom: 4px;
-    scrollbar-width: none;
   }
-  .dots-row::-webkit-scrollbar { display: none; }
 
   .pip {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--border);
     flex-shrink: 0;
-    transition: background 0.2s;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
   }
 
+  .pip:hover  { transform: scale(1.5); }
   .pip.active { background: var(--text); }
 </style>
 </head>
@@ -347,7 +348,7 @@ function navigateTo(newIdx) {
 function renderDots() {
   const row = document.getElementById('dots-row');
   row.innerHTML = deck.map((_, i) =>
-    `<div class="pip${i === idx ? ' active' : ''}"></div>`
+    `<div class="pip${i === idx ? ' active' : ''}" onclick="navigateTo(${i})" title="${deck[i].letter}"></div>`
   ).join('');
 }
 
